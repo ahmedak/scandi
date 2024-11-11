@@ -18,5 +18,9 @@ declare module "sst" {
       "name": string
       "type": "sst.aws.Bucket"
     }
+    "frontend": {
+      "type": "sst.aws.Nextjs"
+      "url": string
+    }
   }
 }
