@@ -28,9 +28,9 @@ export default function DocDetails({ url, docId } : {url: string, docId: string}
 
   return (
     <div>
-      <div className={styles.ctas}>
-        <button className="primary" onClick={fetchDetails}>
-          Get Details
+      <div className={styles.getDetailsButton}>
+        <button onClick={fetchDetails}>
+          Get Extracted Details
         </button>
       </div>
       <div className={styles.statusBox}>
