@@ -1,75 +1,52 @@
-# Monorepo Template
+# scandi 🪪
+Scan ID documents
 
-A template to create a monorepo SST ❍ Ion project.
+Live version [here](https://d2upewxnc2lyk3.cloudfront.net) 🚀
 
-## Get started
+# Table of Contents
 
-1. Use this template to [create your own repo](https://docs.github.com/en/repositories/creating-and-managing-repositories/creating-a-repository-from-a-template).
+  - [Architecture](#architecture)
+    - [Design choices made in developing this app](#design-choices-made-in-developing-this-app)
+  - [Code structure](#code-structure)
+    - [1. infra](#1-infra)
+    - [2. packages/frontend](#2-packagesfrontend)
+    - [3. packages/backend](#3-packagesbackend)
+  - [Use scandi](#use-scandi)
+    - [Local deployment and development](#local-deployment-and-development)
+  - [Areas of improvement](#areas-of-improvement)
 
-2. Clone the new repo.
+## Architecture
+A simplified view of the architecture is present [here](https://miro.com/app/board/uXjVK3HxiQY=/?share_link_id=768182066639)
 
-   ```bash
-   git clone MY_APP
-   cd MY_APP
-   ```
+#### Design choices made in developing this app
+1. I've set up the app using the SST framework since it helps to manage and debug serverless apps locally quite easily.
+2. The form on the frontend uploads images direct to S3 using a pre-signed url. This de-couples uploading from the backend, and any processing can be done later on from S3.
+3. A subscriber function picks up images from S3 bucket and extracts text from the images, and stores the extracted info in a DynamoDB table.
 
-3. Rename the files in the project to the name of your app. 
+### Code structure
+scandi source code is organised in a monorepo. Theres' three parts: `infra`, `packages/frontend` and `packages/backend`
+#### 1. `infra`
+This is where the infrastructure of the app is managed. SST makes it simple to manage infrastructure as code(IaC), and it uses Pulumi providers and terraform under the hood.
+In here we have infrastructre for the frontend (a NextJS app), storage (including DynamoDB table and S3 buckets) and the api.
 
-   ```bash
-   npx replace-in-file '/scandi/g' MY_APP **/*.* --verbose
-   ```
+SST allows us to "link" resources and manages permissions for us. This lets us access the S3 bucket in the Next frontend for eg, to upload passport images. The same bucket can be accessed by lambdas that are part of our backend as well.
 
-4. Deploy!
+#### 2. `packages/frontend`
+This is basically a NextJS app scaffolded using [create-next-app](https://nextjs.org/docs/app/api-reference/cli/create-next-app)
 
-   ```bash
-   npm install
-   npx sst deploy
-   ```
+#### 3. `packages/backend`
+Here we have lamdba functions that form our backend, one to extract text when an image is uploaded, and another one to fetch the extracted data. This would ideally be organised further to separate the "infrastructure" part of lambdas and Textract from any sort of business logic, for now I've kept them in the same place.
 
-6. Optionally, enable [_git push to deploy_](https://ion.sst.dev/docs/console/#autodeploy).
+## Use scandi
+You can access the live version of the app at: [https://d2upewxnc2lyk3.cloudfront.net](https://d2upewxnc2lyk3.cloudfront.net)
 
-## Usage
+#### Local deployment and development
+1. Ensure you have AWS CLI installed and configured with your credentials - SST uses your CLI credentials to manage resources
+2. run ```npx sst dev``` - this runs the NextJS app locally, and routes lambda events to your machine, so you get instant hot reloading and debugging!
 
-This template uses [npm Workspaces](https://docs.npmjs.com/cli/v8/using-npm/workspaces). It has 3 packages to start with and you can add more it.
-
-1. `core/`
-
-   This is for any shared code. It's defined as modules. For example, there's the `Example` module.
-
-   ```ts
-   export module Example {
-     export function hello() {
-       return "Hello, world!";
-     }
-   }
-   ```
-
-   That you can use across other packages using.
-
-   ```ts
-   import { Example } from "@aws-monorepo/core/example";
-
-   Example.hello();
-   ```
-
-2. `functions/`
-
-   This is for your Lambda functions and it uses the `core` package as a local dependency.
-
-3. `scripts/`
-
-    This is for any scripts that you can run on your SST app using the `sst shell` CLI and [`tsx`](https://www.npmjs.com/package/tsx). For example, you can run the example script using:
-
-   ```bash
-   npm run shell src/example.ts
-   ```
-
-### Infrastructure
-
-The `infra/` directory allows you to logically split the infrastructure of your app into separate files. This can be helpful as your app grows.
-
-In the template, we have an `api.ts`, and `storage.ts`. These export the created resources. And are imported in the `sst.config.ts`.
-
----
-
-Join the SST community over on [Discord](https://discord.gg/sst) and follow us on [Twitter](https://twitter.com/SST_dev).
+## Areas of improvement
+1. Unit/Integration/E2E Tests - tests are missing, and ideally I'd start from the tests first. In this case, I focused more on rapid iteration by testing locally.
+2. Ability to handle poor image quality - I've found blurry images don't work super well with AWS Textract, so make sure you have a good quality image. If you'd like you can use one of the images under example images to test.
+3. Code organisation - as the app gets more complex, I'd split code based on hexagonal architecture principles.
+4. Error Handling - There are some basic logs and errors, I'd like to improve error handling by creating custom errors with useful messages on the frontend. The workflow itself is asynchronous, so ideally there'll be a way to notify the user of any processing errors as well (eg image too blurry)
+5. User authentication - userId is hardcoded at the moment, adding users and authentication will make the app more useful and secure.
