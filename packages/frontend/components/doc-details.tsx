@@ -20,7 +20,7 @@ export default function DocDetails({ url, docId } : {url: string, docId: string}
       setDoe(data.dateOfExpiry || "N/A");
       setStatusMessage("Details fetched successfully");
     } catch (error) {
-      setStatusMessage("Error: Unable to fetch details");
+      setStatusMessage("Error: Unable to fetch details. Please wait around 4-5 seconds after uploading");
       setDob("");
       setDoe("");
     }
