@@ -1,7 +1,7 @@
 import { Resource } from 'sst';
 import { S3Event } from 'aws-lambda';
 import { DynamoDBClient } from '@aws-sdk/client-dynamodb';
-import { DynamoDBDocumentClient } from '@aws-sdk/lib-dynamodb';
+import { DynamoDBDocumentClient, PutCommand, PutCommandInput } from '@aws-sdk/lib-dynamodb';
 import {
   TextractClient,
   AnalyzeDocumentCommand,
@@ -17,7 +17,20 @@ const dynamoDb = DynamoDBDocumentClient.from(new DynamoDBClient({}));
 
 export const handler = async (event: S3Event) => {
   const docId = event.Records[0].s3.object.key;
-  console.log(event);
+  const extractedData = await extractData(docId);
+  const keyValuePairs = formatIntoKeyValuePairs(extractedData);
+  const dateOfExpiry = getDateOfExpiry(keyValuePairs);
+  const dateOfBirth = getDateOfBirth(keyValuePairs);
+  await storeDocumentData(docId, {
+    dateOfExpiry,
+    dateOfBirth,
+    allData: keyValuePairs
+  })
+  console.log(keyValuePairs);
+};
+
+async function extractData(docId: string): Promise<AnalyzeDocumentCommandOutput> {
+  console.log(`Extracting data of doc Id: ${docId}`);
   const params: AnalyzeDocumentCommandInput = {
     Document: {
       S3Object: {
@@ -28,14 +41,10 @@ export const handler = async (event: S3Event) => {
     FeatureTypes: ['FORMS'],
   };
 
-  const response = await textractClient.send(
-    new AnalyzeDocumentCommand(params)
-  );
-  const formattedData = formatData(response);
-  console.log(formattedData);
-};
+  return textractClient.send(new AnalyzeDocumentCommand(params));
+}
 
-function formatData(data: AnalyzeDocumentCommandOutput) {
+function formatIntoKeyValuePairs(data: AnalyzeDocumentCommandOutput) {
   const blockMap: Record<string, Block> = {};
   const keyMap: Record<string, Block> = {};
   const valueMap: Record<string, Block> = {};
@@ -69,10 +78,7 @@ function formatData(data: AnalyzeDocumentCommandOutput) {
 }
 
 function getTextForBlock(block: Block, blocks: Block[] = []): string {
-  const ids =
-    block.Relationships?.filter((rel) => rel.Type === 'CHILD').flatMap(
-      (rel) => rel.Ids
-    ) ?? [];
+  const ids = block.Relationships?.filter((rel) => rel.Type === 'CHILD').flatMap((rel) => rel.Ids) ?? [];
 
   const texts = ids.map((id) => {
     const wordBlock = blocks.find((b) => b.Id === id && b.BlockType === 'WORD');
@@ -80,4 +86,51 @@ function getTextForBlock(block: Block, blocks: Block[] = []): string {
   });
 
   return texts.join(' ');
+}
+
+async function storeDocumentData(
+  docId: string,
+  documentData: {
+    allData: Record<string, string>;
+    dateOfExpiry: string;
+    dateOfBirth: string;
+  }
+) {
+  const params: PutCommandInput = {
+    TableName: Resource.Docs.name,
+    Item: {
+      userId: '123',
+      docId,
+      dateOfExpiry: documentData.dateOfExpiry,
+      dateOfBirth: documentData.dateOfBirth,
+      allData: documentData.allData,
+    },
+  };
+
+  try {
+    console.log(`Storing data of doc id: ${docId}`);
+    await dynamoDb.send(new PutCommand(params));
+    console.log(`Data of doc id: ${docId} stored successfully.`);
+  } catch (error) {
+    console.error(`Error storing document ${docId} data:`, error);
+    throw new Error('Failed to store document data');
+  }
+}
+
+function getDateOfExpiry(extractedData: Record<string, string>) {
+  for (const key in extractedData) {
+    if (key.toLowerCase().includes("date") && key.toLowerCase().includes("expiry")) {
+      return extractedData[key];
+    }
+  }
+  return "";
+}
+
+function getDateOfBirth(extractedData: Record<string, string>) {
+  for (const key in extractedData) {
+    if (key.toLowerCase().includes("date") && key.toLowerCase().includes("birth")) {
+      return extractedData[key];
+    }
+  }
+  return "";
 }
