@@ -11,6 +11,10 @@ export const table = new sst.aws.Dynamo("Docs", {
 bucket.subscribe({
   handler: "./packages/backend/src/extract-document-text.handler",
   link: [bucket, table],
+  permissions: [{
+    actions: ["textract:AnalyzeDocument"],
+    resources: ["*"]
+  }]
 }, {
   events: ["s3:ObjectCreated:*"]
 });
