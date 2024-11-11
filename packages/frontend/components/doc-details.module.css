@@ -1,0 +1,12 @@
+.statusBox {
+  padding: 16px;
+  border: 1px solid var(--gray-alpha-200);
+  border-radius: 4px;
+  background: var(--gray-alpha-100);
+  font-size: 14px;
+  color: #fff;
+}
+
+.statusBox p {
+  margin: 8px 0;
+}

@@ -2,6 +2,7 @@
 Scan ID documents
 
 Live version [here](https://d2upewxnc2lyk3.cloudfront.net) 🚀
+(please wait around 5 seconds after uploading to click on Get Details 😄)
 
 # Table of Contents
 
@@ -22,6 +23,7 @@ A simplified view of the architecture is present [here](https://miro.com/app/boa
 1. I've set up the app using the SST framework since it helps to manage and debug serverless apps locally quite easily.
 2. The form on the frontend uploads images direct to S3 using a pre-signed url. This de-couples uploading from the backend, and any processing can be done later on from S3.
 3. A subscriber function picks up images from S3 bucket and extracts text from the images, and stores the extracted info in a DynamoDB table.
+4. The user has to manually click on get details to get the extracted details from the database. This is not ideal, but was done since the workflow itself is asynchronous, and in the interest of time.
 
 ### Code structure
 scandi source code is organised in a monorepo. Theres' three parts: `infra`, `packages/frontend` and `packages/backend`
@@ -46,7 +48,8 @@ You can access the live version of the app at: [https://d2upewxnc2lyk3.cloudfron
 
 ## Areas of improvement
 1. Unit/Integration/E2E Tests - tests are missing, and ideally I'd start from the tests first. In this case, I focused more on rapid iteration by testing locally.
-2. Ability to handle poor image quality - I've found blurry images don't work super well with AWS Textract, so make sure you have a good quality image. If you'd like you can use one of the images under example images to test.
-3. Code organisation - as the app gets more complex, I'd split code based on hexagonal architecture principles.
-4. Error Handling - There are some basic logs and errors, I'd like to improve error handling by creating custom errors with useful messages on the frontend. The workflow itself is asynchronous, so ideally there'll be a way to notify the user of any processing errors as well (eg image too blurry)
-5. User authentication - userId is hardcoded at the moment, adding users and authentication will make the app more useful and secure.
+2. Ability to see extracted details automatically - either using a push notification or polling or a combination of both.
+3. Ability to handle poor image quality - I've found blurry images don't work super well with AWS Textract, so make sure you have a good quality image. If you'd like you can use one of the images under example images to test.
+4. Code organisation - as the app gets more complex, I'd split code based on hexagonal architecture principles.
+5. Error Handling - There are some basic logs and errors, I'd like to improve error handling by creating custom errors with useful messages on the frontend. The workflow itself is asynchronous, so ideally there'll be a way to notify the user of any processing errors as well (eg image too blurry)
+6. User authentication - userId is hardcoded at the moment, adding users and authentication will make the app more useful and secure.

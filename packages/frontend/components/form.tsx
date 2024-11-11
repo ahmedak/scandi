@@ -8,7 +8,6 @@ export default function Form({ url }: { url: string }) {
       className={styles.form}
       onSubmit={async (e) => {
         e.preventDefault();
-
         const file = (e.target as HTMLFormElement).file.files?.[0] ?? null;
 
         const response = await fetch(url, {
